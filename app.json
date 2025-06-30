@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "SpellMaster PRO",
+     "icon": "https://via.placeholder.com/1024x1024/6366f1/ffffff?text=📚",
     "slug": "spellmaster-pro",
     "version": "1.0.0",
     "orientation": "portrait",
