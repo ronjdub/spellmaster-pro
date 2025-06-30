@@ -10,11 +10,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.goodgrowth.spellmasterpro",
+      "bundleIdentifier": "com.ronjwilliams.spellmasterpro",
       "buildNumber": "1",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app uses the microphone for spelling practice and speech recognition.",
-        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to help children practice spelling words."
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to help children practice spelling words.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -23,6 +24,11 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "774565e5-7a0c-4f4d-bf6d-0a555f714697"
+      }
     }
   }
 }
