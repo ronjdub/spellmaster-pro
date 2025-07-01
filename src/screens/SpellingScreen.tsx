@@ -31,6 +31,7 @@ const SpellingScreen: React.FC = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [correctWords, setCorrectWords] = useState<string[]>([]);
   const [missedWords, setMissedWords] = useState<string[]>([]);
+  const [shouldSpeakWord, setShouldSpeakWord] = useState(true);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -42,12 +43,23 @@ const SpellingScreen: React.FC = () => {
     Voice.onSpeechError = onSpeechError;
     Voice.onSpeechEnd = onSpeechEnd;
 
-    speakCurrentWord();
-
     return () => {
       destroyVoice();
     };
   }, []);
+
+  // Speak word when index changes or when shouldSpeakWord flag is set
+  useEffect(() => {
+    if (shouldSpeakWord) {
+      const timer = setTimeout(() => {
+        speakCurrentWord();
+      }, 500);
+      
+      setShouldSpeakWord(false);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentWordIndex, shouldSpeakWord]);
 
   useEffect(() => {
     if (showResult) {
@@ -78,6 +90,7 @@ const SpellingScreen: React.FC = () => {
     setShowResult(false);
     setSpokenText('');
     try {
+      console.log('Speaking word:', currentWord, 'at index:', currentWordIndex);
       await speakWord(currentWord);
     } catch (error) {
       console.error('Error speaking word:', error);
@@ -141,31 +154,41 @@ const SpellingScreen: React.FC = () => {
     setShowResult(true);
 
     if (correct) {
-      setCorrectWords([...correctWords, currentWord]);
+      setCorrectWords(prev => [...prev, currentWord]);
     } else {
-      setMissedWords([...missedWords, currentWord]);
+      setMissedWords(prev => [...prev, currentWord]);
     }
   };
 
   const handleNextWord = () => {
-    if (currentWordIndex < words.length - 1) {
-      setCurrentWordIndex(currentWordIndex + 1);
-      setTimeout(() => {
-        speakCurrentWord();
-      }, 500);
+    const nextIndex = currentWordIndex + 1;
+    
+    if (nextIndex < words.length) {
+      // Move to next word
+      setCurrentWordIndex(nextIndex);
+      setShouldSpeakWord(true); // Trigger speaking of new word
     } else {
-      // Session complete
+      // Session complete - calculate final results
+      const finalCorrectCount = correctWords.length + (isCorrect ? 1 : 0);
+      const finalMissedWords = isCorrect ? missedWords : [...missedWords, currentWord];
+      
+      console.log('Session complete. Final stats:', {
+        totalWords: words.length,
+        correctWords: finalCorrectCount,
+        missedWords: finalMissedWords,
+      });
+      
       navigation.replace('Results', {
         totalWords: words.length,
-        correctWords: correctWords.length + (isCorrect ? 1 : 0),
-        missedWords: isCorrect ? missedWords : [...missedWords, currentWord],
+        correctWords: finalCorrectCount,
+        missedWords: finalMissedWords,
         listName,
       });
     }
   };
 
   const handleRepeatWord = () => {
-    speakCurrentWord();
+    setShouldSpeakWord(true);
   };
 
   return (
@@ -189,6 +212,10 @@ const SpellingScreen: React.FC = () => {
           <Text style={styles.wordTitle}>🎯 Spelling Challenge</Text>
           <Text style={styles.instructionText}>
             Listen carefully and spell the word!
+          </Text>
+          {/* DEBUG: Show current word for testing */}
+          <Text style={styles.debugText}>
+            Current word: {currentWord} (#{currentWordIndex + 1})
           </Text>
         </View>
 
@@ -347,6 +374,12 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     textAlign: 'center',
     fontWeight: '600',
+  },
+  debugText: {
+    fontSize: 14,
+    color: '#ef4444',
+    marginTop: 8,
+    fontWeight: 'bold',
   },
   instructionsContainer: {
     marginBottom: 32,
