@@ -9,6 +9,7 @@ import {
   Alert,
   Animated,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -31,6 +32,7 @@ const SpellingScreen: React.FC = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [correctWords, setCorrectWords] = useState<string[]>([]);
   const [missedWords, setMissedWords] = useState<string[]>([]);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -179,6 +181,35 @@ const SpellingScreen: React.FC = () => {
     speakCurrentWord();
   };
 
+  const HelpModal = () => (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={showHelpModal}
+      onRequestClose={() => setShowHelpModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setShowHelpModal(false)}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.modalTitle}>Simple Steps:</Text>
+          
+          <View style={styles.stepsList}>
+            <Text style={styles.stepText}>1. Listen to the word pronunciation</Text>
+            <Text style={styles.stepText}>2. Tap "Start Spelling"</Text>
+            <Text style={styles.stepText}>3. Spell the word out loud</Text>
+            <Text style={styles.stepText}>4. Tap "Done Spelling"</Text>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -203,20 +234,14 @@ const SpellingScreen: React.FC = () => {
           </Text>
         </View>
 
-        <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsTitle}>Simple Steps:</Text>
-          <Text style={styles.instructionsText}>
-            1. Listen to the word pronunciation
-          </Text>
-          <Text style={styles.instructionsText}>
-            2. Tap "Start Spelling"
-          </Text>
-          <Text style={styles.instructionsText}>
-            3. Spell the word out loud
-          </Text>
-          <Text style={styles.instructionsText}>
-            4. Tap "Done Spelling"
-          </Text>
+        {/* Help Button - ONLY NEW ADDITION */}
+        <View style={styles.helpButtonContainer}>
+          <TouchableOpacity
+            style={styles.helpButton}
+            onPress={() => setShowHelpModal(true)}
+          >
+            <Text style={styles.helpButtonText}>❓</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.controlsContainer}>
@@ -299,6 +324,8 @@ const SpellingScreen: React.FC = () => {
           </Animated.View>
         )}
       </ScrollView>
+
+      <HelpModal />
     </SafeAreaView>
   );
 };
@@ -359,25 +386,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
-  instructionsContainer: {
+  // NEW: Help Button Styles
+  helpButtonContainer: {
+    alignItems: 'center',
     marginBottom: 32,
-    padding: 20,
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#dbeafe',
   },
-  instructionsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1e40af',
-    marginBottom: 12,
+  helpButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#e5e7eb',
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  instructionsText: {
-    fontSize: 16,
-    color: '#1e40af',
-    marginBottom: 8,
-    fontWeight: '500',
+  helpButtonText: {
+    fontSize: 24,
   },
   controlsContainer: {
     gap: 16,
@@ -502,6 +527,57 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // NEW: Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 30,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 15,
+    right: 20,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: '#6b7280',
+    fontWeight: 'bold',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e40af',
+    marginBottom: 20,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  stepsList: {
+    gap: 12,
+  },
+  stepText: {
+    fontSize: 16,
+    color: '#1e40af',
+    fontWeight: '500',
+    paddingLeft: 10,
   },
 });
 
