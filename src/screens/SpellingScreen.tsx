@@ -93,8 +93,13 @@ const SpellingScreen: React.FC = () => {
       const result = e.value[0];
       setTranscription(result);
       
+      // Debug: log what we heard
+      console.log('Speech heard:', result);
+      
       // Extract and display only letter sounds in real-time
       const lettersOnly = extractLettersOnly(result);
+      console.log('Letters extracted:', lettersOnly);
+      
       setSpellingTranscription(lettersOnly);
     }
   };
@@ -104,34 +109,60 @@ const SpellingScreen: React.FC = () => {
     // Convert speech to lowercase for processing
     const lowerText = text.toLowerCase();
     
-    // Map of how letters might be spoken to actual letters
+    // More comprehensive letter mapping including common mispronunciations
     const letterMap: { [key: string]: string } = {
-      'a': 'A', 'ay': 'A', 'eh': 'A',
-      'b': 'B', 'be': 'B', 'bee': 'B',
-      'c': 'C', 'see': 'C', 'sea': 'C',
-      'd': 'D', 'de': 'D', 'dee': 'D',
-      'e': 'E', 'ee': 'E',
-      'f': 'F', 'ef': 'F', 'eff': 'F',
-      'g': 'G', 'gee': 'G', 'jee': 'G',
-      'h': 'H', 'aitch': 'H', 'ache': 'H',
-      'i': 'I', 'eye': 'I', 'ai': 'I',
-      'j': 'J', 'jay': 'J', 'jaye': 'J',
-      'k': 'K', 'kay': 'K', 'okay': 'K',
-      'l': 'L', 'el': 'L', 'ell': 'L',
-      'm': 'M', 'em': 'M',
-      'n': 'N', 'en': 'N',
-      'o': 'O', 'oh': 'O', 'owe': 'O',
-      'p': 'P', 'pee': 'P', 'pe': 'P',
-      'q': 'Q', 'que': 'Q', 'queue': 'Q',
-      'r': 'R', 'are': 'R', 'ar': 'R',
-      's': 'S', 'es': 'S', 'ess': 'S',
-      't': 'T', 'te': 'T', 'tee': 'T',
-      'u': 'U', 'you': 'U', 'yu': 'U',
-      'v': 'V', 've': 'V', 'vee': 'V',
-      'w': 'W', 'double u': 'W', 'doubleyou': 'W',
-      'x': 'X', 'ex': 'X',
-      'y': 'Y', 'why': 'Y', 'wye': 'Y',
-      'z': 'Z', 'zee': 'Z', 'zed': 'Z'
+      // A variations
+      'a': 'A', 'ay': 'A', 'eh': 'A', 'hey': 'A',
+      // B variations  
+      'b': 'B', 'be': 'B', 'bee': 'B', 'bea': 'B',
+      // C variations
+      'c': 'C', 'see': 'C', 'sea': 'C', 'si': 'C', 'cee': 'C',
+      // D variations
+      'd': 'D', 'de': 'D', 'dee': 'D', 'di': 'D',
+      // E variations
+      'e': 'E', 'ee': 'E', 'ea': 'E',
+      // F variations
+      'f': 'F', 'ef': 'F', 'eff': 'F', 'fe': 'F',
+      // G variations
+      'g': 'G', 'gee': 'G', 'jee': 'G', 'ge': 'G', 'ji': 'G',
+      // H variations
+      'h': 'H', 'aitch': 'H', 'ache': 'H', 'age': 'H', 'etch': 'H',
+      // I variations
+      'i': 'I', 'eye': 'I', 'ai': 'I', 'aye': 'I',
+      // J variations
+      'j': 'J', 'jay': 'J', 'jaye': 'J', 'ja': 'J',
+      // K variations
+      'k': 'K', 'kay': 'K', 'ca': 'K', 'kaye': 'K',
+      // L variations
+      'l': 'L', 'el': 'L', 'ell': 'L', 'le': 'L',
+      // M variations
+      'm': 'M', 'em': 'M', 'me': 'M',
+      // N variations
+      'n': 'N', 'en': 'N', 'ne': 'N',
+      // O variations
+      'o': 'O', 'oh': 'O', 'owe': 'O', 'ow': 'O',
+      // P variations
+      'p': 'P', 'pee': 'P', 'pe': 'P', 'pi': 'P',
+      // Q variations
+      'q': 'Q', 'que': 'Q', 'queue': 'Q', 'cue': 'Q', 'cu': 'Q',
+      // R variations
+      'r': 'R', 'are': 'R', 'ar': 'R', 're': 'R',
+      // S variations
+      's': 'S', 'es': 'S', 'ess': 'S', 'se': 'S',
+      // T variations
+      't': 'T', 'te': 'T', 'tee': 'T', 'ti': 'T', 'tea': 'T',
+      // U variations
+      'u': 'U', 'you': 'U', 'yu': 'U', 'ue': 'U', 'ew': 'U',
+      // V variations
+      'v': 'V', 've': 'V', 'vee': 'V', 'vi': 'V',
+      // W variations
+      'w': 'W', 'double u': 'W', 'doubleyou': 'W', 'double you': 'W', 'wu': 'W',
+      // X variations
+      'x': 'X', 'ex': 'X', 'eks': 'X',
+      // Y variations
+      'y': 'Y', 'why': 'Y', 'wye': 'Y', 'wi': 'Y', 'way': 'Y',
+      // Z variations
+      'z': 'Z', 'zee': 'Z', 'zed': 'Z', 'ze': 'Z'
     };
     
     // Split text into words and filter for letter sounds
@@ -140,8 +171,25 @@ const SpellingScreen: React.FC = () => {
     
     for (const word of words) {
       const cleanWord = word.replace(/[^\w]/g, ''); // Remove punctuation
+      
+      // Direct letter mapping
       if (letterMap[cleanWord]) {
         letters.push(letterMap[cleanWord]);
+        continue;
+      }
+      
+      // Check for single letter words
+      if (cleanWord.length === 1 && /[a-z]/.test(cleanWord)) {
+        letters.push(cleanWord.toUpperCase());
+        continue;
+      }
+      
+      // Check partial matches (in case speech recognition cuts off)
+      for (const [key, value] of Object.entries(letterMap)) {
+        if (key.startsWith(cleanWord) || cleanWord.startsWith(key)) {
+          letters.push(value);
+          break;
+        }
       }
     }
     
@@ -160,9 +208,9 @@ const SpellingScreen: React.FC = () => {
 
   const getInstructionText = () => {
     if (isListening) {
-      return 'Say: Word → Letters (A B C) → Word';
+      return 'Say: Word → Letters (AY, BEE, SEE) → Word';
     }
-    return 'Ready to spell? We\'ll only track the letters!';
+    return 'Ready to spell? We\'ll track letters in real-time!';
   };
 
   const getButtonText = () => {
@@ -200,7 +248,10 @@ const SpellingScreen: React.FC = () => {
 
   const evaluateSpelling = () => {
     if (!spellingTranscription.trim()) {
-      Alert.alert('No Letters Detected', 'We couldn\'t hear any letter sounds. Please try again.');
+      Alert.alert(
+        'No Letters Detected', 
+        'Try speaking letters more clearly. Say each letter separately: "A" "B" "C"'
+      );
       return;
     }
 
@@ -278,7 +329,10 @@ const SpellingScreen: React.FC = () => {
             2. Tap "Repeat & Spell Word"
           </Text>
           <Text style={styles.instructionsText}>
-            3. Say: Word → Letters only → Word
+            3. Say: Word → Letters (A, B, C) → Word
+          </Text>
+          <Text style={styles.instructionsText}>
+            💡 Speak letters clearly: "AY" "BEE" "SEE"
           </Text>
           <Text style={styles.instructionsText}>
             📝 Only individual letters will be tracked!
@@ -307,12 +361,15 @@ const SpellingScreen: React.FC = () => {
         {isListening && (
           <View style={styles.listeningContainer}>
             <Text style={styles.listeningText}>🎯 Listening for letters...</Text>
-            {spellingTranscription ? (
-              <View style={styles.lettersDisplay}>
-                <Text style={styles.lettersTitle}>Letters heard:</Text>
-                <Text style={styles.lettersText}>{spellingTranscription}</Text>
-              </View>
-            ) : null}
+            <View style={styles.lettersDisplay}>
+              <Text style={styles.lettersTitle}>Letters heard so far:</Text>
+              <Text style={styles.lettersText}>
+                {spellingTranscription || '(waiting for letters...)'}
+              </Text>
+            </View>
+            <Text style={styles.listeningHint}>
+              Say letters clearly: "A" "B" "C"
+            </Text>
           </View>
         )}
 
@@ -496,6 +553,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1f2937',
     letterSpacing: 4,
+  },
+  listeningHint: {
+    fontSize: 14,
+    color: '#78716c',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 8,
   },
   transcriptionText: {
     fontSize: 16,
