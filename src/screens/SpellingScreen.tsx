@@ -19,8 +19,6 @@ import { speakWord, startListening, stopListening, destroyVoice, isSpellingCorre
 type SpellingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Spelling'>;
 type SpellingScreenRouteProp = RouteProp<RootStackParamList, 'Spelling'>;
 
-type SpellingStage = 'ready' | 'listening' | 'complete';
-
 const SpellingScreen: React.FC = () => {
   const navigation = useNavigation<SpellingScreenNavigationProp>();
   const route = useRoute<SpellingScreenRouteProp>();
@@ -28,8 +26,7 @@ const SpellingScreen: React.FC = () => {
 
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isListening, setIsListening] = useState(false);
-  const [transcription, setTranscription] = useState('');
-  const [spellingTranscription, setSpellingTranscription] = useState('');
+  const [spokenText, setSpokenText] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [correctWords, setCorrectWords] = useState<string[]>([]);
@@ -79,8 +76,7 @@ const SpellingScreen: React.FC = () => {
 
   const speakCurrentWord = async () => {
     setShowResult(false);
-    setTranscription('');
-    setSpellingTranscription('');
+    setSpokenText('');
     try {
       await speakWord(currentWord);
     } catch (error) {
@@ -91,109 +87,9 @@ const SpellingScreen: React.FC = () => {
   const onSpeechResults = (e: SpeechResultsEvent) => {
     if (e.value && e.value.length > 0) {
       const result = e.value[0];
-      setTranscription(result);
-      
-      // Debug: log what we heard
-      console.log('Speech heard:', result);
-      
-      // Extract and display only letter sounds in real-time
-      const lettersOnly = extractLettersOnly(result);
-      console.log('Letters extracted:', lettersOnly);
-      
-      setSpellingTranscription(lettersOnly);
+      console.log('Heard:', result);
+      setSpokenText(result);
     }
-  };
-
-  // Helper function to extract only individual letters from speech
-  const extractLettersOnly = (text: string): string => {
-    // Convert speech to lowercase for processing
-    const lowerText = text.toLowerCase();
-    
-    // More comprehensive letter mapping including common mispronunciations
-    const letterMap: { [key: string]: string } = {
-      // A variations
-      'a': 'A', 'ay': 'A', 'eh': 'A', 'hey': 'A',
-      // B variations  
-      'b': 'B', 'be': 'B', 'bee': 'B', 'bea': 'B',
-      // C variations
-      'c': 'C', 'see': 'C', 'sea': 'C', 'si': 'C', 'cee': 'C',
-      // D variations
-      'd': 'D', 'de': 'D', 'dee': 'D', 'di': 'D',
-      // E variations
-      'e': 'E', 'ee': 'E', 'ea': 'E',
-      // F variations
-      'f': 'F', 'ef': 'F', 'eff': 'F', 'fe': 'F',
-      // G variations
-      'g': 'G', 'gee': 'G', 'jee': 'G', 'ge': 'G', 'ji': 'G',
-      // H variations
-      'h': 'H', 'aitch': 'H', 'ache': 'H', 'age': 'H', 'etch': 'H',
-      // I variations
-      'i': 'I', 'eye': 'I', 'ai': 'I', 'aye': 'I',
-      // J variations
-      'j': 'J', 'jay': 'J', 'jaye': 'J', 'ja': 'J',
-      // K variations
-      'k': 'K', 'kay': 'K', 'ca': 'K', 'kaye': 'K',
-      // L variations
-      'l': 'L', 'el': 'L', 'ell': 'L', 'le': 'L',
-      // M variations
-      'm': 'M', 'em': 'M', 'me': 'M',
-      // N variations
-      'n': 'N', 'en': 'N', 'ne': 'N',
-      // O variations
-      'o': 'O', 'oh': 'O', 'owe': 'O', 'ow': 'O',
-      // P variations
-      'p': 'P', 'pee': 'P', 'pe': 'P', 'pi': 'P',
-      // Q variations
-      'q': 'Q', 'que': 'Q', 'queue': 'Q', 'cue': 'Q', 'cu': 'Q',
-      // R variations
-      'r': 'R', 'are': 'R', 'ar': 'R', 're': 'R',
-      // S variations
-      's': 'S', 'es': 'S', 'ess': 'S', 'se': 'S',
-      // T variations
-      't': 'T', 'te': 'T', 'tee': 'T', 'ti': 'T', 'tea': 'T',
-      // U variations
-      'u': 'U', 'you': 'U', 'yu': 'U', 'ue': 'U', 'ew': 'U',
-      // V variations
-      'v': 'V', 've': 'V', 'vee': 'V', 'vi': 'V',
-      // W variations
-      'w': 'W', 'double u': 'W', 'doubleyou': 'W', 'double you': 'W', 'wu': 'W',
-      // X variations
-      'x': 'X', 'ex': 'X', 'eks': 'X',
-      // Y variations
-      'y': 'Y', 'why': 'Y', 'wye': 'Y', 'wi': 'Y', 'way': 'Y',
-      // Z variations
-      'z': 'Z', 'zee': 'Z', 'zed': 'Z', 'ze': 'Z'
-    };
-    
-    // Split text into words and filter for letter sounds
-    const words = lowerText.split(/\s+/);
-    const letters: string[] = [];
-    
-    for (const word of words) {
-      const cleanWord = word.replace(/[^\w]/g, ''); // Remove punctuation
-      
-      // Direct letter mapping
-      if (letterMap[cleanWord]) {
-        letters.push(letterMap[cleanWord]);
-        continue;
-      }
-      
-      // Check for single letter words
-      if (cleanWord.length === 1 && /[a-z]/.test(cleanWord)) {
-        letters.push(cleanWord.toUpperCase());
-        continue;
-      }
-      
-      // Check partial matches (in case speech recognition cuts off)
-      for (const [key, value] of Object.entries(letterMap)) {
-        if (key.startsWith(cleanWord) || cleanWord.startsWith(key)) {
-          letters.push(value);
-          break;
-        }
-      }
-    }
-    
-    return letters.join(' ');
   };
 
   const onSpeechError = (e: SpeechErrorEvent) => {
@@ -206,22 +102,9 @@ const SpellingScreen: React.FC = () => {
     setIsListening(false);
   };
 
-  const getInstructionText = () => {
-    if (isListening) {
-      return 'Say: Word → Letters (AY, BEE, SEE) → Word';
-    }
-    return 'Ready to spell? We\'ll track letters in real-time!';
-  };
-
-  const getButtonText = () => {
-    if (isListening) {
-      return '🛑 Done Spelling';
-    }
-    return '🎤 Repeat & Spell Word';
-  };
-
-  const handleStartListening = async () => {
-    setTranscription('');
+  const handleStartSpelling = async () => {
+    setSpokenText('');
+    setShowResult(false);
     setIsListening(true);
     
     try {
@@ -233,7 +116,7 @@ const SpellingScreen: React.FC = () => {
     }
   };
 
-  const handleStopListening = async () => {
+  const handleDoneSpelling = async () => {
     if (!isListening) return;
 
     try {
@@ -247,16 +130,13 @@ const SpellingScreen: React.FC = () => {
   };
 
   const evaluateSpelling = () => {
-    if (!spellingTranscription.trim()) {
-      Alert.alert(
-        'No Letters Detected', 
-        'Try speaking letters more clearly. Say each letter separately: "A" "B" "C"'
-      );
+    if (!spokenText.trim()) {
+      Alert.alert('No Speech Detected', 'We couldn\'t hear anything. Please try again.');
       return;
     }
 
-    // Evaluate only the letters (ignore any full words)
-    const correct = isSpellingCorrect(spellingTranscription, currentWord);
+    // Use the simple spelling checker
+    const correct = isSpellingCorrect(spokenText, currentWord);
     setIsCorrect(correct);
     setShowResult(true);
 
@@ -266,8 +146,6 @@ const SpellingScreen: React.FC = () => {
       setMissedWords([...missedWords, currentWord]);
     }
   };
-
-
 
   const handleNextWord = () => {
     if (currentWordIndex < words.length - 1) {
@@ -307,35 +185,26 @@ const SpellingScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* HIDDEN: Word display commented out for true spelling bee experience */}
-        {/* 
-        <View style={styles.wordContainer}>
-          <Text style={styles.wordTitle}>🗣️ Your word is:</Text>
-          <Text style={styles.currentWord}>{currentWord}</Text>
-        </View>
-        */}
-
         <View style={styles.wordContainer}>
           <Text style={styles.wordTitle}>🎯 Spelling Challenge</Text>
-          <Text style={styles.instructionText}>{getInstructionText()}</Text>
+          <Text style={styles.instructionText}>
+            Listen carefully and spell the word!
+          </Text>
         </View>
 
         <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsTitle}>Spelling Bee Format:</Text>
+          <Text style={styles.instructionsTitle}>Simple Steps:</Text>
           <Text style={styles.instructionsText}>
             1. Listen to the word pronunciation
           </Text>
           <Text style={styles.instructionsText}>
-            2. Tap "Repeat & Spell Word"
+            2. Tap "Start Spelling"
           </Text>
           <Text style={styles.instructionsText}>
-            3. Say: Word → Letters (A, B, C) → Word
+            3. Spell the word out loud
           </Text>
           <Text style={styles.instructionsText}>
-            💡 Speak letters clearly: "AY" "BEE" "SEE"
-          </Text>
-          <Text style={styles.instructionsText}>
-            📝 Only individual letters will be tracked!
+            4. Tap "Done Spelling"
           </Text>
         </View>
 
@@ -347,36 +216,39 @@ const SpellingScreen: React.FC = () => {
             <Text style={styles.buttonText}>🔄 Repeat Word</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.button,
-              isListening ? styles.listeningButton : styles.startButton
-            ]}
-            onPress={isListening ? handleStopListening : handleStartListening}
-          >
-            <Text style={styles.buttonText}>{getButtonText()}</Text>
-          </TouchableOpacity>
+          {!isListening ? (
+            <TouchableOpacity
+              style={[styles.button, styles.startButton]}
+              onPress={handleStartSpelling}
+            >
+              <Text style={styles.buttonText}>🎤 Start Spelling</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, styles.stopButton]}
+              onPress={handleDoneSpelling}
+            >
+              <Text style={styles.buttonText}>🛑 Done Spelling</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {isListening && (
           <View style={styles.listeningContainer}>
-            <Text style={styles.listeningText}>🎯 Listening for letters...</Text>
-            <View style={styles.lettersDisplay}>
-              <Text style={styles.lettersTitle}>Letters heard so far:</Text>
-              <Text style={styles.lettersText}>
-                {spellingTranscription || '(waiting for letters...)'}
+            <Text style={styles.listeningText}>🎯 Listening...</Text>
+            <View style={styles.spokenTextContainer}>
+              <Text style={styles.spokenTextLabel}>What you're saying:</Text>
+              <Text style={styles.spokenText}>
+                {spokenText || '(waiting for speech...)'}
               </Text>
             </View>
-            <Text style={styles.listeningHint}>
-              Say letters clearly: "A" "B" "C"
-            </Text>
           </View>
         )}
 
-        {!isListening && spellingTranscription && !showResult && (
-          <View style={styles.spellingPreview}>
-            <Text style={styles.spellingPreviewTitle}>Letters you spelled:</Text>
-            <Text style={styles.spellingPreviewText}>{spellingTranscription}</Text>
+        {!isListening && spokenText && !showResult && (
+          <View style={styles.previewContainer}>
+            <Text style={styles.previewTitle}>Your spelling:</Text>
+            <Text style={styles.previewText}>{spokenText}</Text>
           </View>
         )}
 
@@ -398,7 +270,7 @@ const SpellingScreen: React.FC = () => {
               {isCorrect ? 'Correct!' : 'Not quite right'}
             </Text>
             <Text style={styles.heardText}>
-              You spelled: "{spellingTranscription}"
+              You said: "{spokenText}"
             </Text>
             {!isCorrect && (
               <Text style={styles.correctSpellingText}>
@@ -476,11 +348,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
-  currentWord: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#1f2937',
-  },
   instructionsContainer: {
     marginBottom: 32,
     padding: 20,
@@ -519,7 +386,7 @@ const styles = StyleSheet.create({
   startButton: {
     backgroundColor: '#10b981',
   },
-  listeningButton: {
+  stopButton: {
     backgroundColor: '#ef4444',
   },
   buttonText: {
@@ -538,35 +405,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#92400e',
+    marginBottom: 16,
+  },
+  spokenTextContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  spokenTextLabel: {
+    fontSize: 14,
+    color: '#78716c',
     marginBottom: 8,
   },
-  lettersDisplay: {
-    alignItems: 'center',
-  },
-  lettersTitle: {
-    fontSize: 14,
-    color: '#78716c',
-    marginBottom: 4,
-  },
-  lettersText: {
-    fontSize: 24,
+  spokenText: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1f2937',
-    letterSpacing: 4,
-  },
-  listeningHint: {
-    fontSize: 14,
-    color: '#78716c',
-    fontStyle: 'italic',
     textAlign: 'center',
-    marginTop: 8,
+    minHeight: 30,
   },
-  transcriptionText: {
-    fontSize: 16,
-    color: '#78716c',
-    fontStyle: 'italic',
-  },
-  spellingPreview: {
+  previewContainer: {
     alignItems: 'center',
     padding: 16,
     backgroundColor: '#f0f9ff',
@@ -575,13 +432,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#0ea5e9',
   },
-  spellingPreviewTitle: {
+  previewTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#0369a1',
     marginBottom: 8,
   },
-  spellingPreviewText: {
+  previewText: {
     fontSize: 18,
     color: '#0c4a6e',
     fontWeight: '600',
