@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Alert,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +19,8 @@ import { speakWord, startListening, stopListening, destroyVoice, isSpellingCorre
 type SpellingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Spelling'>;
 type SpellingScreenRouteProp = RouteProp<RootStackParamList, 'Spelling'>;
 
+type SpellingStage = 'ready' | 'listening' | 'complete';
+
 const SpellingScreen: React.FC = () => {
   const navigation = useNavigation<SpellingScreenNavigationProp>();
   const route = useRoute<SpellingScreenRouteProp>();
@@ -26,11 +29,11 @@ const SpellingScreen: React.FC = () => {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [transcription, setTranscription] = useState('');
+  const [spellingTranscription, setSpellingTranscription] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [correctWords, setCorrectWords] = useState<string[]>([]);
   const [missedWords, setMissedWords] = useState<string[]>([]);
-  const [hasSpoken, setHasSpoken] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -75,21 +78,20 @@ const SpellingScreen: React.FC = () => {
   }, [showResult]);
 
   const speakCurrentWord = async () => {
-    setHasSpoken(false);
     setShowResult(false);
     setTranscription('');
+    setSpellingTranscription('');
     try {
       await speakWord(currentWord);
-      setHasSpoken(true);
     } catch (error) {
       console.error('Error speaking word:', error);
-      setHasSpoken(true);
     }
   };
 
   const onSpeechResults = (e: SpeechResultsEvent) => {
     if (e.value && e.value.length > 0) {
-      setTranscription(e.value[0]);
+      const result = e.value[0];
+      setTranscription(result);
     }
   };
 
@@ -103,9 +105,22 @@ const SpellingScreen: React.FC = () => {
     setIsListening(false);
   };
 
+  const getInstructionText = () => {
+    if (isListening) {
+      return 'Now: Say word → Spell it → Say word again';
+    }
+    return 'Ready to spell? Tap the button below!';
+  };
+
+  const getButtonText = () => {
+    if (isListening) {
+      return '🛑 Done Spelling';
+    }
+    return '🎤 Repeat & Spell Word';
+  };
+
   const handleStartListening = async () => {
     setTranscription('');
-    setShowResult(false);
     setIsListening(true);
     
     try {
@@ -136,8 +151,19 @@ const SpellingScreen: React.FC = () => {
       return;
     }
 
-    const correct = isSpellingCorrect(transcription, currentWord);
+    // Smart parsing: Extract spelling from the middle of the transcription
+    // Logic: User says "word" + spells "W O R D" + says "word" again
+    // We want to extract just the spelled part
+    const spellingPart = extractSpellingFromTranscription(transcription, currentWord);
+    
+    if (!spellingPart) {
+      Alert.alert('Could not detect spelling', 'Please make sure to say the word, spell it clearly, then say the word again.');
+      return;
+    }
+
+    const correct = isSpellingCorrect(spellingPart, currentWord);
     setIsCorrect(correct);
+    setSpellingTranscription(spellingPart);
     setShowResult(true);
 
     if (correct) {
@@ -145,6 +171,37 @@ const SpellingScreen: React.FC = () => {
     } else {
       setMissedWords([...missedWords, currentWord]);
     }
+  };
+
+  // Helper function to extract spelling from full transcription
+  const extractSpellingFromTranscription = (fullText: string, word: string): string => {
+    const text = fullText.toLowerCase();
+    const targetWord = word.toLowerCase();
+    
+    // Split by the target word to find the middle section
+    const parts = text.split(targetWord);
+    
+    if (parts.length >= 3) {
+      // Take the middle part (between first and last occurrence of the word)
+      const middlePart = parts[1].trim();
+      return middlePart;
+    }
+    
+    // Fallback: look for spelled-out pattern (letters with spaces)
+    const spelledPattern = targetWord.split('').join(' ');
+    if (text.includes(spelledPattern)) {
+      return spelledPattern;
+    }
+    
+    // Another fallback: look for individual letters
+    const letterPattern = /\b[a-z]\b/g;
+    const letters = text.match(letterPattern);
+    if (letters && letters.length >= targetWord.length) {
+      return letters.join(' ');
+    }
+    
+    // Final fallback: return the whole transcription
+    return fullText;
   };
 
   const handleNextWord = () => {
@@ -170,7 +227,7 @@ const SpellingScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.progressContainer}>
           <Text style={styles.progressText}>
             Word {currentWordIndex + 1} of {words.length}
@@ -185,20 +242,29 @@ const SpellingScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* HIDDEN: Word display commented out for true spelling bee experience */}
+        {/* 
         <View style={styles.wordContainer}>
           <Text style={styles.wordTitle}>🗣️ Your word is:</Text>
           <Text style={styles.currentWord}>{currentWord}</Text>
         </View>
+        */}
+
+        <View style={styles.wordContainer}>
+          <Text style={styles.wordTitle}>🎯 Spelling Challenge</Text>
+          <Text style={styles.instructionText}>{getInstructionText()}</Text>
+        </View>
 
         <View style={styles.instructionsContainer}>
+          <Text style={styles.instructionsTitle}>Spelling Bee Format:</Text>
           <Text style={styles.instructionsText}>
-            1. Listen to the word
+            1. Listen to the word pronunciation
           </Text>
           <Text style={styles.instructionsText}>
-            2. Say the word clearly
+            2. Tap "Repeat & Spell Word"
           </Text>
           <Text style={styles.instructionsText}>
-            3. Spell it out loud: "A P P L E"
+            3. Say: Word → Spell it → Word again
           </Text>
           <Text style={styles.instructionsText}>
             4. Tap "Done Spelling" when finished
@@ -216,13 +282,11 @@ const SpellingScreen: React.FC = () => {
           <TouchableOpacity
             style={[
               styles.button,
-              isListening ? styles.listeningButton : styles.startButton,
+              isListening ? styles.listeningButton : styles.startButton
             ]}
             onPress={isListening ? handleStopListening : handleStartListening}
           >
-            <Text style={styles.buttonText}>
-              {isListening ? '🛑 Done Spelling' : '🎤 Start Spelling'}
-            </Text>
+            <Text style={styles.buttonText}>{getButtonText()}</Text>
           </TouchableOpacity>
         </View>
 
@@ -253,11 +317,11 @@ const SpellingScreen: React.FC = () => {
               {isCorrect ? 'Correct!' : 'Not quite right'}
             </Text>
             <Text style={styles.heardText}>
-              You said: "{transcription}"
+              You spelled: "{spellingTranscription}"
             </Text>
             {!isCorrect && (
               <Text style={styles.correctSpellingText}>
-                Correct spelling: {currentWord.split('').join(' ').toUpperCase()}
+                The word was: {currentWord}
               </Text>
             )}
             <TouchableOpacity
@@ -270,7 +334,7 @@ const SpellingScreen: React.FC = () => {
             </TouchableOpacity>
           </Animated.View>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -280,10 +344,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
     paddingHorizontal: 24,
     paddingTop: 20,
+    paddingBottom: 40,
   },
   progressContainer: {
     marginBottom: 32,
@@ -317,9 +384,16 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   wordTitle: {
-    fontSize: 18,
-    color: '#6b7280',
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#6366f1',
     marginBottom: 8,
+  },
+  instructionText: {
+    fontSize: 18,
+    color: '#1f2937',
+    textAlign: 'center',
+    fontWeight: '600',
   },
   currentWord: {
     fontSize: 36,
@@ -333,6 +407,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#dbeafe',
+  },
+  instructionsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e40af',
+    marginBottom: 12,
   },
   instructionsText: {
     fontSize: 16,
@@ -361,10 +441,6 @@ const styles = StyleSheet.create({
   listeningButton: {
     backgroundColor: '#ef4444',
   },
-  disabledButton: {
-    backgroundColor: '#d1d5db',
-    opacity: 0.6,
-  },
   buttonText: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -387,6 +463,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#78716c',
     fontStyle: 'italic',
+  },
+  spellingPreview: {
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#0ea5e9',
+  },
+  spellingPreviewTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0369a1',
+    marginBottom: 8,
+  },
+  spellingPreviewText: {
+    fontSize: 18,
+    color: '#0c4a6e',
+    fontWeight: '600',
   },
   resultContainer: {
     padding: 24,
