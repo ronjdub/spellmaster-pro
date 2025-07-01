@@ -7,6 +7,8 @@ import { StyleSheet } from 'react-native';
 import HomeScreen from './src/screens/HomeScreen';
 import SpellingScreen from './src/screens/SpellingScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
+import AddWordsScreen from './src/screens/AddWordsScreen';
+import ManageListsScreen from './src/screens/ManageListsScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -17,6 +19,8 @@ export type RootStackParamList = {
     missedWords: string[];
     listName: string;
   };
+  AddWords: undefined;
+  ManageLists: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -52,6 +56,16 @@ export default function App() {
           name="Results" 
           component={ResultsScreen}
           options={{ title: 'Session Results' }}
+        />
+        <Stack.Screen 
+          name="AddWords" 
+          component={AddWordsScreen}
+          options={{ title: 'Add Words' }}
+        />
+        <Stack.Screen 
+          name="ManageLists" 
+          component={ManageListsScreen}
+          options={{ title: 'Manage Lists' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -12,6 +12,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { storeMissedWords } from '../utils/storage';
+import HamburgerMenu from '../components/HamburgerMenu';
 
 type ResultsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Results'>;
 type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
@@ -22,6 +23,13 @@ const ResultsScreen: React.FC = () => {
   const { totalWords, correctWords, missedWords, listName } = route.params;
 
   const accuracy = Math.round((correctWords / totalWords) * 100);
+
+  // Set up header with hamburger menu
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => <HamburgerMenu currentScreen="Results" />,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     // Store missed words for future practice
@@ -42,36 +50,26 @@ const ResultsScreen: React.FC = () => {
     }
   };
 
-  const getAccuracyColor = () => {
-    if (accuracy >= 80) return '#16a34a';
-    if (accuracy >= 60) return '#f59e0b';
-    return '#dc2626';
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>📊 Session Results</Text>
+          <Text style={styles.title}>Session Complete!</Text>
           <Text style={styles.listName}>{listName}</Text>
         </View>
 
         <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{totalWords}</Text>
-            <Text style={styles.statLabel}>Total Words</Text>
+          <View style={[styles.statCard, styles.accuracyCard]}>
+            <Text style={styles.statNumber}>{accuracy}%</Text>
+            <Text style={styles.statLabel}>Accuracy</Text>
           </View>
-          
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{correctWords}</Text>
             <Text style={styles.statLabel}>Correct</Text>
           </View>
-          
-          <View style={[styles.statCard, styles.accuracyCard]}>
-            <Text style={[styles.statNumber, { color: getAccuracyColor() }]}>
-              {accuracy}%
-            </Text>
-            <Text style={styles.statLabel}>Accuracy</Text>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{missedWords.length}</Text>
+            <Text style={styles.statLabel}>Missed</Text>
           </View>
         </View>
 
@@ -83,9 +81,7 @@ const ResultsScreen: React.FC = () => {
 
         {missedWords.length > 0 && (
           <View style={styles.missedWordsContainer}>
-            <Text style={styles.missedWordsTitle}>
-              📚 Words to Review ({missedWords.length})
-            </Text>
+            <Text style={styles.missedWordsTitle}>Words to Review:</Text>
             <View style={styles.missedWordsList}>
               {missedWords.map((word, index) => (
                 <View key={index} style={styles.missedWordItem}>
@@ -94,7 +90,7 @@ const ResultsScreen: React.FC = () => {
               ))}
             </View>
             <Text style={styles.missedWordsNote}>
-              💡 These words have been saved for future practice!
+              These words have been added to your practice list
             </Text>
           </View>
         )}

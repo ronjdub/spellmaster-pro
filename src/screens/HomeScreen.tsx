@@ -15,6 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { WORD_LISTS, WORD_LIST_OPTIONS } from '../constants/wordLists';
 import { getMissedWords, getLastSelectedList, storeLastSelectedList } from '../utils/storage';
+import HamburgerMenu from '../components/HamburgerMenu';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -24,6 +25,13 @@ const HomeScreen: React.FC = () => {
   const [missedWords, setMissedWords] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
+
+  // Set up header with hamburger menu
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => <HamburgerMenu currentScreen="Home" />,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     loadInitialData();

@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
 import { RootStackParamList } from '../../App';
 import { speakWord, startListening, stopListening, destroyVoice, isSpellingCorrect } from '../utils/speechUtils';
+import HamburgerMenu from '../components/HamburgerMenu';
 
 type SpellingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Spelling'>;
 type SpellingScreenRouteProp = RouteProp<RootStackParamList, 'Spelling'>;
@@ -38,6 +39,13 @@ const SpellingScreen: React.FC = () => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const currentWord = words[currentWordIndex];
+
+  // Set up header with hamburger menu
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => <HamburgerMenu currentScreen="Spelling" />,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     Voice.onSpeechResults = onSpeechResults;
