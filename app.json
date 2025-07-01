@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SpellMaster PRO",
-     "icon": "https://i.imgur.com/Y9Rm5Po.png",
+     "icon": "./icon.png",
     "slug": "spellmaster-pro",
     "version": "1.0.0",
     "orientation": "portrait",
