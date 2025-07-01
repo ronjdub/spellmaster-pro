@@ -340,11 +340,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   progressContainer: {
-    marginBottom: 32,
+    marginBottom: 16,
   },
   progressText: {
     fontSize: 16,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   progressBar: {
-    height: 8,
+    height: 6,
     backgroundColor: '#e5e7eb',
     borderRadius: 4,
     overflow: 'hidden',
@@ -364,8 +364,8 @@ const styles = StyleSheet.create({
   },
   wordContainer: {
     alignItems: 'center',
-    marginBottom: 32,
-    padding: 24,
+    marginBottom: 16,
+    padding: 16,
     backgroundColor: 'white',
     borderRadius: 16,
     shadowColor: '#000',
@@ -375,10 +375,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   wordTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#6366f1',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   instructionText: {
     fontSize: 18,
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   // NEW: Help Button Styles
   helpButtonContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   helpButton: {
     width: 50,
@@ -405,11 +405,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   controlsContainer: {
-    gap: 16,
-    marginBottom: 24,
+    gap: 10,
+    marginBottom: 12,
   },
   button: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: 'center',
@@ -480,10 +480,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resultContainer: {
-    padding: 24,
+    padding: 20,
     borderRadius: 16,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 4,
   },
   correctResult: {
     backgroundColor: '#dcfce7',
@@ -496,25 +496,25 @@ const styles = StyleSheet.create({
     borderColor: '#dc2626',
   },
   resultIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+    fontSize: 40,
+    marginBottom: 8,
   },
   resultText: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   heardText: {
     fontSize: 16,
     color: '#6b7280',
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: 'center',
   },
   correctSpellingText: {
     fontSize: 16,
     color: '#dc2626',
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: 12,
     textAlign: 'center',
   },
   nextButton: {
