@@ -92,7 +92,60 @@ const SpellingScreen: React.FC = () => {
     if (e.value && e.value.length > 0) {
       const result = e.value[0];
       setTranscription(result);
+      
+      // Extract and display only letter sounds in real-time
+      const lettersOnly = extractLettersOnly(result);
+      setSpellingTranscription(lettersOnly);
     }
+  };
+
+  // Helper function to extract only individual letters from speech
+  const extractLettersOnly = (text: string): string => {
+    // Convert speech to lowercase for processing
+    const lowerText = text.toLowerCase();
+    
+    // Map of how letters might be spoken to actual letters
+    const letterMap: { [key: string]: string } = {
+      'a': 'A', 'ay': 'A', 'eh': 'A',
+      'b': 'B', 'be': 'B', 'bee': 'B',
+      'c': 'C', 'see': 'C', 'sea': 'C',
+      'd': 'D', 'de': 'D', 'dee': 'D',
+      'e': 'E', 'ee': 'E',
+      'f': 'F', 'ef': 'F', 'eff': 'F',
+      'g': 'G', 'gee': 'G', 'jee': 'G',
+      'h': 'H', 'aitch': 'H', 'ache': 'H',
+      'i': 'I', 'eye': 'I', 'ai': 'I',
+      'j': 'J', 'jay': 'J', 'jaye': 'J',
+      'k': 'K', 'kay': 'K', 'okay': 'K',
+      'l': 'L', 'el': 'L', 'ell': 'L',
+      'm': 'M', 'em': 'M',
+      'n': 'N', 'en': 'N',
+      'o': 'O', 'oh': 'O', 'owe': 'O',
+      'p': 'P', 'pee': 'P', 'pe': 'P',
+      'q': 'Q', 'que': 'Q', 'queue': 'Q',
+      'r': 'R', 'are': 'R', 'ar': 'R',
+      's': 'S', 'es': 'S', 'ess': 'S',
+      't': 'T', 'te': 'T', 'tee': 'T',
+      'u': 'U', 'you': 'U', 'yu': 'U',
+      'v': 'V', 've': 'V', 'vee': 'V',
+      'w': 'W', 'double u': 'W', 'doubleyou': 'W',
+      'x': 'X', 'ex': 'X',
+      'y': 'Y', 'why': 'Y', 'wye': 'Y',
+      'z': 'Z', 'zee': 'Z', 'zed': 'Z'
+    };
+    
+    // Split text into words and filter for letter sounds
+    const words = lowerText.split(/\s+/);
+    const letters: string[] = [];
+    
+    for (const word of words) {
+      const cleanWord = word.replace(/[^\w]/g, ''); // Remove punctuation
+      if (letterMap[cleanWord]) {
+        letters.push(letterMap[cleanWord]);
+      }
+    }
+    
+    return letters.join(' ');
   };
 
   const onSpeechError = (e: SpeechErrorEvent) => {
@@ -107,9 +160,9 @@ const SpellingScreen: React.FC = () => {
 
   const getInstructionText = () => {
     if (isListening) {
-      return 'Now: Say word → Spell it → Say word again';
+      return 'Say: Word → Letters (A B C) → Word';
     }
-    return 'Ready to spell? Tap the button below!';
+    return 'Ready to spell? We\'ll only track the letters!';
   };
 
   const getButtonText = () => {
@@ -146,24 +199,14 @@ const SpellingScreen: React.FC = () => {
   };
 
   const evaluateSpelling = () => {
-    if (!transcription.trim()) {
-      Alert.alert('No Speech Detected', 'We couldn\'t hear anything. Please try again.');
+    if (!spellingTranscription.trim()) {
+      Alert.alert('No Letters Detected', 'We couldn\'t hear any letter sounds. Please try again.');
       return;
     }
 
-    // Smart parsing: Extract spelling from the middle of the transcription
-    // Logic: User says "word" + spells "W O R D" + says "word" again
-    // We want to extract just the spelled part
-    const spellingPart = extractSpellingFromTranscription(transcription, currentWord);
-    
-    if (!spellingPart) {
-      Alert.alert('Could not detect spelling', 'Please make sure to say the word, spell it clearly, then say the word again.');
-      return;
-    }
-
-    const correct = isSpellingCorrect(spellingPart, currentWord);
+    // Evaluate only the letters (ignore any full words)
+    const correct = isSpellingCorrect(spellingTranscription, currentWord);
     setIsCorrect(correct);
-    setSpellingTranscription(spellingPart);
     setShowResult(true);
 
     if (correct) {
@@ -173,36 +216,7 @@ const SpellingScreen: React.FC = () => {
     }
   };
 
-  // Helper function to extract spelling from full transcription
-  const extractSpellingFromTranscription = (fullText: string, word: string): string => {
-    const text = fullText.toLowerCase();
-    const targetWord = word.toLowerCase();
-    
-    // Split by the target word to find the middle section
-    const parts = text.split(targetWord);
-    
-    if (parts.length >= 3) {
-      // Take the middle part (between first and last occurrence of the word)
-      const middlePart = parts[1].trim();
-      return middlePart;
-    }
-    
-    // Fallback: look for spelled-out pattern (letters with spaces)
-    const spelledPattern = targetWord.split('').join(' ');
-    if (text.includes(spelledPattern)) {
-      return spelledPattern;
-    }
-    
-    // Another fallback: look for individual letters
-    const letterPattern = /\b[a-z]\b/g;
-    const letters = text.match(letterPattern);
-    if (letters && letters.length >= targetWord.length) {
-      return letters.join(' ');
-    }
-    
-    // Final fallback: return the whole transcription
-    return fullText;
-  };
+
 
   const handleNextWord = () => {
     if (currentWordIndex < words.length - 1) {
@@ -264,10 +278,10 @@ const SpellingScreen: React.FC = () => {
             2. Tap "Repeat & Spell Word"
           </Text>
           <Text style={styles.instructionsText}>
-            3. Say: Word → Spell it → Word again
+            3. Say: Word → Letters only → Word
           </Text>
           <Text style={styles.instructionsText}>
-            4. Tap "Done Spelling" when finished
+            📝 Only individual letters will be tracked!
           </Text>
         </View>
 
@@ -292,10 +306,20 @@ const SpellingScreen: React.FC = () => {
 
         {isListening && (
           <View style={styles.listeningContainer}>
-            <Text style={styles.listeningText}>🎯 Listening...</Text>
-            {transcription ? (
-              <Text style={styles.transcriptionText}>Heard: "{transcription}"</Text>
+            <Text style={styles.listeningText}>🎯 Listening for letters...</Text>
+            {spellingTranscription ? (
+              <View style={styles.lettersDisplay}>
+                <Text style={styles.lettersTitle}>Letters heard:</Text>
+                <Text style={styles.lettersText}>{spellingTranscription}</Text>
+              </View>
             ) : null}
+          </View>
+        )}
+
+        {!isListening && spellingTranscription && !showResult && (
+          <View style={styles.spellingPreview}>
+            <Text style={styles.spellingPreviewTitle}>Letters you spelled:</Text>
+            <Text style={styles.spellingPreviewText}>{spellingTranscription}</Text>
           </View>
         )}
 
@@ -458,6 +482,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#92400e',
     marginBottom: 8,
+  },
+  lettersDisplay: {
+    alignItems: 'center',
+  },
+  lettersTitle: {
+    fontSize: 14,
+    color: '#78716c',
+    marginBottom: 4,
+  },
+  lettersText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    letterSpacing: 4,
   },
   transcriptionText: {
     fontSize: 16,
