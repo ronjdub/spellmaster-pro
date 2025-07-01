@@ -104,11 +104,6 @@ const SpellingScreen: React.FC = () => {
   };
 
   const handleStartListening = async () => {
-    if (!hasSpoken) {
-      Alert.alert('Wait', 'Please wait for the word to be spoken first.');
-      return;
-    }
-
     setTranscription('');
     setShowResult(false);
     setIsListening(true);
@@ -222,10 +217,8 @@ const SpellingScreen: React.FC = () => {
             style={[
               styles.button,
               isListening ? styles.listeningButton : styles.startButton,
-              !hasSpoken && styles.disabledButton
             ]}
             onPress={isListening ? handleStopListening : handleStartListening}
-            disabled={!hasSpoken}
           >
             <Text style={styles.buttonText}>
               {isListening ? '🛑 Done Spelling' : '🎤 Start Spelling'}
