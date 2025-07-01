@@ -148,10 +148,21 @@ const SpellingScreen: React.FC = () => {
   };
 
   const handleNextWord = () => {
-    if (currentWordIndex < words.length - 1) {
-      setCurrentWordIndex(currentWordIndex + 1);
-      setTimeout(() => {
-        speakCurrentWord();
+    const nextIndex = currentWordIndex + 1;
+    
+    if (nextIndex < words.length) {
+      // Move to next word
+      setCurrentWordIndex(nextIndex);
+      // Speak the next word directly using the calculated index
+      const nextWord = words[nextIndex];
+      setTimeout(async () => {
+        setShowResult(false);
+        setSpokenText('');
+        try {
+          await speakWord(nextWord);
+        } catch (error) {
+          console.error('Error speaking word:', error);
+        }
       }, 500);
     } else {
       // Session complete
