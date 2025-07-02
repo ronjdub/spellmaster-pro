@@ -9,12 +9,14 @@ import {
   Alert,
   Animated,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
 import { RootStackParamList } from '../../App';
 import { speakWord, startListening, stopListening, destroyVoice, isSpellingCorrect } from '../utils/speechUtils';
+
 
 type SpellingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Spelling'>;
 type SpellingScreenRouteProp = RouteProp<RootStackParamList, 'Spelling'>;
@@ -34,11 +36,14 @@ const SpellingScreen: React.FC = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [correctWords, setCorrectWords] = useState<string[]>([]);
   const [missedWords, setMissedWords] = useState<string[]>([]);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const currentWord = words[currentWordIndex];
+
+ 
 
   useEffect(() => {
     Voice.onSpeechResults = onSpeechResults;
@@ -270,10 +275,21 @@ const SpellingScreen: React.FC = () => {
 
 
   const handleNextWord = () => {
-    if (currentWordIndex < words.length - 1) {
-      setCurrentWordIndex(currentWordIndex + 1);
-      setTimeout(() => {
-        speakCurrentWord();
+    const nextIndex = currentWordIndex + 1;
+    
+    if (nextIndex < words.length) {
+      // Move to next word
+      setCurrentWordIndex(nextIndex);
+      // Speak the next word directly using the calculated index
+      const nextWord = words[nextIndex];
+      setTimeout(async () => {
+        setShowResult(false);
+        setSpokenText('');
+        try {
+          await speakWord(nextWord);
+        } catch (error) {
+          console.error('Error speaking word:', error);
+        }
       }, 500);
     } else {
       // Session complete
@@ -289,6 +305,35 @@ const SpellingScreen: React.FC = () => {
   const handleRepeatWord = () => {
     speakCurrentWord();
   };
+
+  const HelpModal = () => (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={showHelpModal}
+      onRequestClose={() => setShowHelpModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setShowHelpModal(false)}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.modalTitle}>Simple Steps:</Text>
+          
+          <View style={styles.stepsList}>
+            <Text style={styles.stepText}>1. Listen to the word pronunciation</Text>
+            <Text style={styles.stepText}>2. Tap "Start Spelling"</Text>
+            <Text style={styles.stepText}>3. Spell the word out loud</Text>
+            <Text style={styles.stepText}>4. Tap "Done Spelling"</Text>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -320,23 +365,14 @@ const SpellingScreen: React.FC = () => {
           <Text style={styles.instructionText}>{getInstructionText()}</Text>
         </View>
 
-        <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsTitle}>Spelling Bee Format:</Text>
-          <Text style={styles.instructionsText}>
-            1. Listen to the word pronunciation
-          </Text>
-          <Text style={styles.instructionsText}>
-            2. Tap "Repeat & Spell Word"
-          </Text>
-          <Text style={styles.instructionsText}>
-            3. Say: Word → Letters (A, B, C) → Word
-          </Text>
-          <Text style={styles.instructionsText}>
-            💡 Speak letters clearly: "AY" "BEE" "SEE"
-          </Text>
-          <Text style={styles.instructionsText}>
-            📝 Only individual letters will be tracked!
-          </Text>
+        {/* Help Button - ONLY NEW ADDITION */}
+        <View style={styles.helpButtonContainer}>
+          <TouchableOpacity
+            style={styles.helpButton}
+            onPress={() => setShowHelpModal(true)}
+          >
+            <Text style={styles.helpButtonText}>❓</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.controlsContainer}>
@@ -416,6 +452,8 @@ const SpellingScreen: React.FC = () => {
           </Animated.View>
         )}
       </ScrollView>
+
+      <HelpModal />
     </SafeAreaView>
   );
 };
@@ -430,11 +468,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   progressContainer: {
-    marginBottom: 32,
+    marginBottom: 16,
   },
   progressText: {
     fontSize: 16,
@@ -443,7 +481,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   progressBar: {
-    height: 8,
+    height: 6,
     backgroundColor: '#e5e7eb',
     borderRadius: 4,
     overflow: 'hidden',
@@ -454,8 +492,8 @@ const styles = StyleSheet.create({
   },
   wordContainer: {
     alignItems: 'center',
-    marginBottom: 32,
-    padding: 24,
+    marginBottom: 16,
+    padding: 16,
     backgroundColor: 'white',
     borderRadius: 16,
     shadowColor: '#000',
@@ -465,10 +503,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   wordTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#6366f1',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   instructionText: {
     fontSize: 18,
@@ -476,37 +514,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
-  currentWord: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#1f2937',
+  // NEW: Help Button Styles
+  helpButtonContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  instructionsContainer: {
-    marginBottom: 32,
-    padding: 20,
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#dbeafe',
+  helpButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#e5e7eb',
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  instructionsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1e40af',
-    marginBottom: 12,
-  },
-  instructionsText: {
-    fontSize: 16,
-    color: '#1e40af',
-    marginBottom: 8,
-    fontWeight: '500',
+  helpButtonText: {
+    fontSize: 24,
   },
   controlsContainer: {
-    gap: 16,
-    marginBottom: 24,
+    gap: 10,
+    marginBottom: 12,
   },
   button: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: 'center',
@@ -587,10 +618,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resultContainer: {
-    padding: 24,
+    padding: 20,
     borderRadius: 16,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 4,
   },
   correctResult: {
     backgroundColor: '#dcfce7',
@@ -603,25 +634,25 @@ const styles = StyleSheet.create({
     borderColor: '#dc2626',
   },
   resultIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+    fontSize: 40,
+    marginBottom: 8,
   },
   resultText: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   heardText: {
     fontSize: 16,
     color: '#6b7280',
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: 'center',
   },
   correctSpellingText: {
     fontSize: 16,
     color: '#dc2626',
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: 12,
     textAlign: 'center',
   },
   nextButton: {
@@ -634,6 +665,57 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // NEW: Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 30,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 15,
+    right: 20,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: '#6b7280',
+    fontWeight: 'bold',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e40af',
+    marginBottom: 20,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  stepsList: {
+    gap: 12,
+  },
+  stepText: {
+    fontSize: 16,
+    color: '#1e40af',
+    fontWeight: '500',
+    paddingLeft: 10,
   },
 });
 

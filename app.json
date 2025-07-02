@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SpellMaster PRO",
-     "icon": "./icon.png",
+    "icon": "./icon.png",
     "slug": "spellmaster-pro",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,6 +16,8 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app uses the microphone for spelling practice and speech recognition.",
         "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to help children practice spelling words.",
+        "NSCameraUsageDescription": "SpellMaster PRO needs camera access to capture images of text for word extraction.",
+        "NSPhotoLibraryUsageDescription": "SpellMaster PRO needs photo library access to save captured images.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -23,7 +25,10 @@
       "package": "com.ronjwilliams.spellmasterpro",
       "versionCode": 1,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "extra": {
