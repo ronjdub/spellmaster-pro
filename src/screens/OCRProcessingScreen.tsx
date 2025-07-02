@@ -1,4 +1,4 @@
-// src/screens/OCRProcessingScreen.tsx
+// src/screens/OCRProcessingScreen.tsx - UPDATED with real OCR
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -16,6 +16,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { RootStackParamList } from '../../App';
 import { storeCustomWordList } from '../utils/storage';
 
@@ -35,31 +36,43 @@ const OCRProcessingScreen: React.FC = () => {
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
   const [listName, setListName] = useState('');
   const [processingStep, setProcessingStep] = useState('Analyzing image...');
+  const [ocrError, setOcrError] = useState<string | null>(null);
 
   useEffect(() => {
-    processImage();
+    processImageWithOCR();
   }, []);
 
-  const processImage = async () => {
+  const processImageWithOCR = async () => {
     try {
-      // Simulate OCR processing steps
-      setProcessingStep('Analyzing image...');
-      await delay(1000);
+      setIsProcessing(true);
+      setOcrError(null);
       
-      setProcessingStep('Detecting text regions...');
-      await delay(1500);
+      // Step 1: Analyze image
+      setProcessingStep('Analyzing image structure...');
+      await delay(800);
       
-      setProcessingStep('Extracting words...');
-      await delay(1000);
-      
-      // Mock OCR results - in real implementation, you'd use a service like Google Vision API
-      const mockExtractedText = simulateOCRExtraction();
-      setExtractedText(mockExtractedText);
-      
-      setProcessingStep('Processing words...');
+      // Step 2: Run OCR
+      setProcessingStep('Reading text with AI...');
       await delay(500);
       
-      const extractedWords = extractWordsFromText(mockExtractedText);
+      const result = await TextRecognition.recognize(imageUri);
+      
+      if (!result || !result.text || result.text.trim().length === 0) {
+        throw new Error('No text found in image. Try taking a clearer photo with better lighting.');
+      }
+      
+      setExtractedText(result.text);
+      
+      // Step 3: Process results
+      setProcessingStep('Extracting words...');
+      await delay(500);
+      
+      const extractedWords = extractWordsFromText(result.text);
+      
+      if (extractedWords.length === 0) {
+        throw new Error('No valid words found. Please try a different image.');
+      }
+      
       setWords(extractedWords);
       
       // Auto-select all words initially
@@ -71,12 +84,16 @@ const OCRProcessingScreen: React.FC = () => {
       setIsProcessing(false);
     } catch (error) {
       console.error('OCR processing error:', error);
+      setOcrError(error instanceof Error ? error.message : 'Failed to process image');
+      setIsProcessing(false);
+      
+      // Show retry dialog
       Alert.alert(
-        'Processing Error',
-        'Failed to process the image. Please try again.',
+        'OCR Processing Failed',
+        error instanceof Error ? error.message : 'Failed to process the image. Please try again with a clearer photo.',
         [
-          { text: 'Retry', onPress: processImage },
-          { text: 'Cancel', onPress: () => navigation.goBack() }
+          { text: 'Retry', onPress: processImageWithOCR },
+          { text: 'Go Back', onPress: () => navigation.goBack() }
         ]
       );
     }
@@ -84,25 +101,16 @@ const OCRProcessingScreen: React.FC = () => {
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const simulateOCRExtraction = (): string => {
-    // Simulate different types of text that might be extracted
-    const mockTexts = [
-      'apple banana cherry dog elephant fish guitar house ice cream jump kangaroo lion',
-      'reading writing arithmetic science history geography mathematics english vocabulary spelling',
-      'beautiful wonderful amazing incredible fantastic spectacular marvelous excellent outstanding',
-      'bicycle computer telephone television refrigerator microwave automobile motorcycle airplane',
-      'friendship happiness kindness generous thoughtful considerate responsible reliable trustworthy'
-    ];
-    
-    return mockTexts[Math.floor(Math.random() * mockTexts.length)];
-  };
-
   const extractWordsFromText = (text: string): string[] => {
     return text
       .toLowerCase()
-      .replace(/[^\w\s]/g, '') // Remove punctuation
+      // Replace common OCR misreads
+      .replace(/[0-9]/g, '') // Remove numbers
+      .replace(/[^\w\s]/g, ' ') // Replace punctuation with spaces
       .split(/\s+/) // Split on whitespace
-      .filter(word => word.length > 2) // Filter out very short words
+      .map(word => word.trim())
+      .filter(word => word.length >= 3) // Filter out very short words
+      .filter(word => /^[a-z]+$/.test(word)) // Only alphabetic words
       .filter((word, index, arr) => arr.indexOf(word) === index) // Remove duplicates
       .sort(); // Sort alphabetically
   };
@@ -154,7 +162,7 @@ const OCRProcessingScreen: React.FC = () => {
             }
           },
           {
-            text: 'Add More Words',
+            text: 'Take Another Photo',
             onPress: () => navigation.goBack()
           }
         ]
@@ -177,13 +185,34 @@ const OCRProcessingScreen: React.FC = () => {
             <Text style={styles.processingStep}>{processingStep}</Text>
             
             <View style={styles.progressBar}>
-              <View style={styles.progressFill} />
+              <View style={[
+                styles.progressFill, 
+                { width: processingStep.includes('Complete') ? '100%' : '70%' }
+              ]} />
             </View>
             
             <Text style={styles.processingHint}>
-              Using AI to extract words from your image...
+              Using Google ML Kit to extract text from your image...
             </Text>
           </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (ocrError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="camera-outline" size={80} color="#ef4444" />
+          <Text style={styles.errorTitle}>Processing Failed</Text>
+          <Text style={styles.errorMessage}>{ocrError}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={processImageWithOCR}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>Take New Photo</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -197,7 +226,9 @@ const OCRProcessingScreen: React.FC = () => {
           <Image source={{ uri: imageUri }} style={styles.resultImage} />
           <View style={styles.imageOverlay}>
             <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-            <Text style={styles.imageStatus}>Text Extracted Successfully</Text>
+            <Text style={styles.imageStatus}>
+              Found {words.length} words
+            </Text>
           </View>
         </View>
 
@@ -205,7 +236,9 @@ const OCRProcessingScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Extracted Text</Text>
           <View style={styles.textContainer}>
-            <Text style={styles.extractedTextDisplay}>{extractedText}</Text>
+            <ScrollView style={styles.extractedTextScroll} nestedScrollEnabled>
+              <Text style={styles.extractedTextDisplay}>{extractedText}</Text>
+            </ScrollView>
           </View>
         </View>
 
@@ -247,6 +280,14 @@ const OCRProcessingScreen: React.FC = () => {
               </TouchableOpacity>
             ))}
           </View>
+
+          {words.length === 0 && (
+            <View style={styles.noWordsContainer}>
+              <Ionicons name="document-outline" size={48} color="#9ca3af" />
+              <Text style={styles.noWordsText}>No words extracted</Text>
+              <Text style={styles.noWordsHint}>Try a clearer image with more text</Text>
+            </View>
+          )}
         </View>
 
         {/* Save Word List */}
@@ -254,7 +295,7 @@ const OCRProcessingScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Save Word List</Text>
           <TextInput
             style={styles.nameInput}
-            placeholder="Enter list name (e.g., 'My Reading Words')"
+            placeholder="Enter list name (e.g., 'Science Vocabulary')"
             value={listName}
             onChangeText={setListName}
             maxLength={50}
@@ -320,7 +361,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   progressFill: {
-    width: '70%',
     height: '100%',
     backgroundColor: '#059669',
   },
@@ -329,6 +369,49 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ef4444',
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  retryButton: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  backButton: {
+    backgroundColor: '#6b7280',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   imageContainer: {
     margin: 16,
@@ -374,10 +457,14 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     backgroundColor: '#fff',
-    padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
+  extractedTextScroll: {
+    maxHeight: 120,
+    padding: 16,
   },
   extractedTextDisplay: {
     fontSize: 16,
@@ -426,6 +513,22 @@ const styles = StyleSheet.create({
   },
   selectedWordText: {
     color: '#fff',
+  },
+  noWordsContainer: {
+    alignItems: 'center',
+    padding: 32,
+  },
+  noWordsText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#9ca3af',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noWordsHint: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
   },
   nameInput: {
     backgroundColor: '#fff',
