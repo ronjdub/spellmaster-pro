@@ -12,7 +12,6 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { storeMissedWords } from '../utils/storage';
-import HamburgerMenu from '../components/HamburgerMenu';
 
 type ResultsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Results'>;
 type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
@@ -24,12 +23,6 @@ const ResultsScreen: React.FC = () => {
 
   const accuracy = Math.round((correctWords / totalWords) * 100);
 
-  // Set up header with hamburger menu
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => <HamburgerMenu currentScreen="Results" />,
-    });
-  }, [navigation]);
 
   useEffect(() => {
     // Store missed words for future practice
