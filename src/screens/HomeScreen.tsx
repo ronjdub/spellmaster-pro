@@ -1,4 +1,4 @@
-// src/screens/HomeScreen.tsx
+// src/screens/HomeScreen.tsx - UPDATED to include custom lists
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -10,19 +10,32 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { WORD_LISTS, WORD_LIST_OPTIONS } from '../constants/wordLists';
-import { getMissedWords, getLastSelectedList, storeLastSelectedList } from '../utils/storage';
+import { 
+  getMissedWords, 
+  getLastSelectedList, 
+  storeLastSelectedList,
+  getCustomWordLists,
+  CustomWordList 
+} from '../utils/storage';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+
+interface PickerOption {
+  label: string;
+  value: string;
+  words?: string[];
+}
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [selectedList, setSelectedList] = useState<string>('week1');
   const [missedWords, setMissedWords] = useState<string[]>([]);
+  const [customLists, setCustomLists] = useState<CustomWordList[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
   
@@ -32,25 +45,27 @@ const HomeScreen: React.FC = () => {
     });
   }, [navigation]);
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    loadInitialData();
-  }, []);
+  // Reload data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadInitialData();
+    }, [])
+  );
 
   const loadInitialData = async () => {
+    setLoading(true);
     try {
-      const [lastSelected, missed] = await Promise.all([
+      const [lastSelected, missed, custom] = await Promise.all([
         getLastSelectedList(),
         getMissedWords(),
+        getCustomWordLists(),
       ]);
       
       if (lastSelected) {
         setSelectedList(lastSelected);
       }
       setMissedWords(missed);
+      setCustomLists(custom);
     } catch (error) {
       console.error('Error loading initial data:', error);
     } finally {
@@ -69,7 +84,19 @@ const HomeScreen: React.FC = () => {
       }
       words = missedWords;
       listName = 'Missed Words';
+    } else if (selectedList.startsWith('custom_')) {
+      // Handle custom lists
+      const customListName = selectedList.replace('custom_', '');
+      const customList = customLists.find(list => list.name === customListName);
+      if (customList) {
+        words = customList.words;
+        listName = customList.name;
+      } else {
+        Alert.alert('Error', 'Custom list not found.');
+        return;
+      }
     } else {
+      // Handle built-in lists
       words = WORD_LISTS[selectedList as keyof typeof WORD_LISTS];
       listName = WORD_LIST_OPTIONS.find(option => option.value === selectedList)?.label || '';
     }
@@ -84,11 +111,32 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('Spelling', { words, listName });
   };
 
-  const pickerOptions = [...WORD_LIST_OPTIONS];
-  if (missedWords.length > 0) {
-    pickerOptions.push({ label: `Practice Missed Words (${missedWords.length})`, value: 'missed' });
-  }
+  // Build picker options dynamically
+  const buildPickerOptions = (): PickerOption[] => {
+    const options: PickerOption[] = [...WORD_LIST_OPTIONS];
+    
+    // Add custom lists
+    customLists.forEach(customList => {
+      options.push({
+        label: `📝 ${customList.name}`,
+        value: `custom_${customList.name}`,
+        words: customList.words
+      });
+    });
+    
+    // Add missed words if any
+    if (missedWords.length > 0) {
+      options.push({ 
+        label: `🔄 Practice Missed Words (${missedWords.length})`, 
+        value: 'missed',
+        words: missedWords
+      });
+    }
+    
+    return options;
+  };
 
+  const pickerOptions = buildPickerOptions();
   const selectedOption = pickerOptions.find(option => option.value === selectedList);
 
   const handleOptionSelect = (value: string) => {
@@ -183,13 +231,24 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.startButtonText}>🎯 Start Practice</Text>
         </TouchableOpacity>
 
-        {missedWords.length > 0 && (
-          <View style={styles.statsContainer}>
-            <Text style={styles.statsText}>
-              📚 You have {missedWords.length} words to review
-            </Text>
-          </View>
-        )}
+        {/* Stats Section */}
+        <View style={styles.statsSection}>
+          {missedWords.length > 0 && (
+            <View style={styles.statsContainer}>
+              <Text style={styles.statsText}>
+                📚 You have {missedWords.length} words to review
+              </Text>
+            </View>
+          )}
+          
+          {customLists.length > 0 && (
+            <View style={styles.statsContainer}>
+              <Text style={styles.statsText}>
+                📝 You have {customLists.length} custom word {customLists.length === 1 ? 'list' : 'lists'}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -258,6 +317,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1f2937',
     fontWeight: '600',
+    flex: 1,
   },
   pickerArrow: {
     fontSize: 14,
@@ -327,6 +387,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1f2937',
     fontWeight: '500',
+    flex: 1,
   },
   selectedOptionText: {
     color: '#2563eb',
@@ -354,13 +415,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  statsContainer: {
+  statsSection: {
     marginTop: 32,
+    width: '100%',
+  },
+  statsContainer: {
     padding: 16,
     backgroundColor: '#fef3c7',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#f59e0b',
+    marginBottom: 12,
   },
   statsText: {
     fontSize: 16,

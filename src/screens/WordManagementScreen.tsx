@@ -1,4 +1,4 @@
-// src/screens/WordManagementScreen.tsx
+// src/screens/WordManagementScreen.tsx - UPDATED with hamburger menu
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -22,6 +22,7 @@ import {
   clearMissedWords 
 } from '../utils/storage';
 import { WORD_LISTS, WORD_LIST_OPTIONS } from '../constants/wordLists';
+import HamburgerMenu from '../components/HamburgerMenu';
 
 interface CustomWordList {
   name: string;
@@ -39,6 +40,13 @@ const WordManagementScreen: React.FC = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingListName, setEditingListName] = useState('');
   const [editingWords, setEditingWords] = useState('');
+
+  // Add hamburger menu to header
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => <HamburgerMenu currentScreen="WordManagement" />,
+    });
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -145,6 +153,7 @@ const WordManagementScreen: React.FC = () => {
   };
 
   const handlePracticeList = (words: string[], listName: string) => {
+    // Navigate to Practice stack's Spelling screen
     navigation.navigate('Practice' as any, {
       screen: 'Spelling',
       params: { words, listName }
