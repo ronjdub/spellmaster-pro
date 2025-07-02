@@ -1,14 +1,18 @@
-// App.tsx
+// Enhanced App.tsx with Drawer Navigation and Phase 2 Features
+// 🎯 THIS REPLACES YOUR CURRENT App.tsx COMPLETELY
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from './src/screens/HomeScreen';
 import SpellingScreen from './src/screens/SpellingScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
-import AddWordsScreen from './src/screens/AddWordsScreen';
-import ManageListsScreen from './src/screens/ManageListsScreen';
+import CameraScreen from './src/screens/CameraScreen';
+import OCRProcessingScreen from './src/screens/OCRProcessingScreen';
+import WordManagementScreen from './src/screens/WordManagementScreen';
+import CustomDrawerContent from './src/components/CustomDrawerContent';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -19,18 +23,80 @@ export type RootStackParamList = {
     missedWords: string[];
     listName: string;
   };
-  AddWords: undefined;
-  ManageLists: undefined;
+  Camera: undefined;
+  OCRProcessing: { imageUri: string };
+  WordManagement: undefined;
 };
 
+const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// Stack Navigator for practice flow
+const PracticeStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerStyle: {
+        backgroundColor: '#6366f1',
+      },
+      headerTintColor: '#fff',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+      },
+    }}
+  >
+    <Stack.Screen 
+      name="Home" 
+      component={HomeScreen}
+      options={{ title: 'SpellMaster PRO' }}
+    />
+    <Stack.Screen 
+      name="Spelling" 
+      component={SpellingScreen}
+      options={{ title: 'Practice Spelling' }}
+    />
+    <Stack.Screen 
+      name="Results" 
+      component={ResultsScreen}
+      options={{ title: 'Session Results' }}
+    />
+  </Stack.Navigator>
+);
+
+// Stack Navigator for OCR flow
+const OCRStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerStyle: {
+        backgroundColor: '#059669',
+      },
+      headerTintColor: '#fff',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+      },
+    }}
+  >
+    <Stack.Screen 
+      name="Camera" 
+      component={CameraScreen}
+      options={{ title: 'Take Photo' }}
+    />
+    <Stack.Screen 
+      name="OCRProcessing" 
+      component={OCRProcessingScreen}
+      options={{ title: 'Process Text' }}
+    />
+  </Stack.Navigator>
+);
 
 export default function App() {
   return (
     <NavigationContainer>
       <StatusBar style="auto" />
-      <Stack.Navigator 
-        initialRouteName="Home"
+      <Drawer.Navigator
+        initialRouteName="Practice"
+        drawerContent={props => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerStyle: {
             backgroundColor: '#6366f1',
@@ -40,34 +106,50 @@ export default function App() {
             fontWeight: 'bold',
             fontSize: 20,
           },
+          drawerActiveTintColor: '#6366f1',
+          drawerInactiveTintColor: '#6b7280',
+          drawerStyle: {
+            backgroundColor: '#f8fafc',
+            width: 280,
+          },
         }}
       >
-        <Stack.Screen 
-          name="Home" 
-          component={HomeScreen}
-          options={{ title: 'SpellMaster PRO' }}
+        <Drawer.Screen 
+          name="Practice" 
+          component={PracticeStack}
+          options={{
+            title: 'Spelling Practice',
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="school-outline" size={size} color={color} />
+            ),
+            headerShown: false,
+          }}
         />
-        <Stack.Screen 
-          name="Spelling" 
-          component={SpellingScreen}
-          options={{ title: 'Practice Spelling' }}
+        <Drawer.Screen 
+          name="OCRUpload" 
+          component={OCRStack}
+          options={{
+            title: 'Upload Words',
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="camera-outline" size={size} color={color} />
+            ),
+            headerShown: false,
+          }}
         />
-        <Stack.Screen 
-          name="Results" 
-          component={ResultsScreen}
-          options={{ title: 'Session Results' }}
+        <Drawer.Screen 
+          name="WordManagement" 
+          component={WordManagementScreen}
+          options={{
+            title: 'Manage Words',
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="list-outline" size={size} color={color} />
+            ),
+            headerStyle: {
+              backgroundColor: '#7c3aed',
+            },
+          }}
         />
-        <Stack.Screen 
-          name="AddWords" 
-          component={AddWordsScreen}
-          options={{ title: 'Add Words' }}
-        />
-        <Stack.Screen 
-          name="ManageLists" 
-          component={ManageListsScreen}
-          options={{ title: 'Manage Lists' }}
-        />
-      </Stack.Navigator>
+      </Drawer.Navigator>
     </NavigationContainer>
   );
 }
