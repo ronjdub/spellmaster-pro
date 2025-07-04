@@ -87,7 +87,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
 
       <View style={styles.footer}>
         <View style={styles.featureHighlight}>
-          <Ionicons name="sparkles" size={20} color="#f59e0b" />
+          <Ionicons name="star-outline" size={20} color="#f59e0b" />
           <Text style={styles.featureText}>
             New: AI-powered word recognition!
           </Text>

@@ -14,9 +14,9 @@ import { Camera, CameraType, FlashMode } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '../../App';
+import { OCRStackParamList } from '../../App';
 
-type CameraScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Camera'>;
+type CameraScreenNavigationProp = NativeStackNavigationProp<OCRStackParamList, 'Camera'>;
 
 const { width, height } = Dimensions.get('window');
 

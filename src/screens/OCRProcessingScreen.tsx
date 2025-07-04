@@ -17,11 +17,11 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
-import { RootStackParamList } from '../../App';
+import { OCRStackParamList } from '../../App';
 import { storeCustomWordList } from '../utils/storage';
 
-type OCRProcessingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OCRProcessing'>;
-type OCRProcessingScreenRouteProp = RouteProp<RootStackParamList, 'OCRProcessing'>;
+type OCRProcessingScreenNavigationProp = NativeStackNavigationProp<OCRStackParamList, 'OCRProcessing'>;
+type OCRProcessingScreenRouteProp = RouteProp<OCRStackParamList, 'OCRProcessing'>;
 
 const { width } = Dimensions.get('window');
 
