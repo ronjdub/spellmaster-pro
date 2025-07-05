@@ -1,4 +1,4 @@
-// src/screens/CameraScreen.tsx - ENHANCED VERSION (EAS Compatible)
+// src/screens/CameraScreen.tsx - ENHANCED VERSION (Complete & Fixed)
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -14,6 +14,7 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
+import { PinchGestureHandler, State } from 'react-native-gesture-handler';
 import { Camera, CameraType, FlashMode, AutoFocus } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,6 +34,7 @@ const CameraScreen: React.FC = () => {
   const [flashMode, setFlashMode] = useState(FlashMode.off);
   const [isCapturing, setIsCapturing] = useState(false);
   const [zoom, setZoom] = useState(0);
+  const [baseZoom, setBaseZoom] = useState(0);
   const [focusPoint, setFocusPoint] = useState<{x: number, y: number} | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -64,6 +66,18 @@ const CameraScreen: React.FC = () => {
   const getCameraPermissions = async () => {
     const { status } = await Camera.requestCameraPermissionsAsync();
     setHasPermission(status === 'granted');
+  };
+
+  const handlePinchGesture = (event: any) => {
+    const { scale, state } = event.nativeEvent;
+    
+    if (state === State.BEGAN) {
+      setBaseZoom(zoom);
+    } else if (state === State.ACTIVE) {
+      // Calculate new zoom: base zoom + scale factor adjustment
+      const newZoom = Math.min(Math.max(baseZoom + (scale - 1) * 0.5, 0), 1);
+      setZoom(newZoom);
+    }
   };
 
   const handleCameraTouch = (event: any) => {
@@ -140,12 +154,12 @@ const CameraScreen: React.FC = () => {
   };
 
   const zoomIn = () => {
-    const newZoom = Math.min(zoom + 0.02, 1); // Much smaller increment
+    const newZoom = Math.min(zoom + 0.05, 1); // Slightly bigger increments as backup
     setZoom(newZoom);
   };
 
   const zoomOut = () => {
-    const newZoom = Math.max(zoom - 0.02, 0); // Much smaller increment
+    const newZoom = Math.max(zoom - 0.05, 0); // Slightly bigger increments as backup
     setZoom(newZoom);
   };
 
@@ -184,155 +198,162 @@ const CameraScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Camera
-        ref={cameraRef}
-        style={styles.camera}
-        type={type}
-        flashMode={flashMode}
-        autoFocus={AutoFocus.on}
-        zoom={zoom}
+      <PinchGestureHandler
+        onGestureEvent={handlePinchGesture}
+        onHandlerStateChange={handlePinchGesture}
       >
-        <TouchableOpacity 
-          style={styles.touchableOverlay}
-          activeOpacity={1}
-          onPress={handleCameraTouch}
-        >
-          <View style={styles.overlay}>
-            {/* Top instruction bar with help button */}
-            <View style={styles.topBar}>
-              <View style={styles.topBarContent}>
-                <View style={[
-                  styles.instructionContainer,
-                  isFocused && styles.instructionFocused
-                ]}>
-                  <Ionicons 
-                    name={isFocused ? "checkmark-circle" : "camera-outline"} 
-                    size={20} 
-                    color="#fff" 
-                  />
-                  <Text style={styles.instructionText}>
-                    {isFocused ? "Camera is auto-focusing" : "Position text in frame • Use zoom controls"}
-                  </Text>
+        <View style={styles.cameraWrapper}>
+          <Camera
+            ref={cameraRef}
+            style={styles.camera}
+            type={type}
+            flashMode={flashMode}
+            autoFocus={AutoFocus.on}
+            zoom={zoom}
+          >
+            <TouchableOpacity 
+              style={styles.touchableOverlay}
+              activeOpacity={1}
+              onPress={handleCameraTouch}
+            >
+              <View style={styles.overlay}>
+                {/* Top instruction bar with help button */}
+                <View style={styles.topBar}>
+                  <View style={styles.topBarContent}>
+                    <View style={[
+                      styles.instructionContainer,
+                      isFocused && styles.instructionFocused
+                    ]}>
+                      <Ionicons 
+                        name={isFocused ? "checkmark-circle" : "camera-outline"} 
+                        size={20} 
+                        color="#fff" 
+                      />
+                      <Text style={styles.instructionText}>
+                        {isFocused ? "Camera is auto-focusing" : "Pinch to zoom • Position text in frame"}
+                      </Text>
+                    </View>
+                    
+                    <TouchableOpacity 
+                      style={styles.helpButton}
+                      onPress={() => setShowHelp(true)}
+                    >
+                      <Ionicons name="help-circle" size={24} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                
-                <TouchableOpacity 
-                  style={styles.helpButton}
-                  onPress={() => setShowHelp(true)}
-                >
-                  <Ionicons name="help-circle" size={24} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            </View>
 
-            {/* Enhanced frame guide for text */}
-            <View style={styles.textFrameGuide}>
-              <View style={[styles.frameCorner, styles.topLeft]} />
-              <View style={[styles.frameCorner, styles.topRight]} />
-              <View style={[styles.frameCorner, styles.bottomLeft]} />
-              <View style={[styles.frameCorner, styles.bottomRight]} />
-              
-              {/* Text alignment guides */}
-              <View style={styles.textGuideLines}>
-                <View style={styles.horizontalGuide} />
-                <View style={styles.horizontalGuide} />
-                <View style={styles.horizontalGuide} />
-              </View>
-            </View>
+                {/* Enhanced frame guide for text */}
+                <View style={styles.textFrameGuide}>
+                  <View style={[styles.frameCorner, styles.topLeft]} />
+                  <View style={[styles.frameCorner, styles.topRight]} />
+                  <View style={[styles.frameCorner, styles.bottomLeft]} />
+                  <View style={[styles.frameCorner, styles.bottomRight]} />
+                  
+                  {/* Text alignment guides */}
+                  <View style={styles.textGuideLines}>
+                    <View style={styles.horizontalGuide} />
+                    <View style={styles.horizontalGuide} />
+                    <View style={styles.horizontalGuide} />
+                  </View>
+                </View>
 
-            {/* Focus ring */}
-            {focusPoint && (
-              <Animated.View
-                style={[
-                  styles.focusRing,
-                  {
-                    left: focusPoint.x - 40,
-                    top: focusPoint.y - 40,
-                    opacity: focusRingOpacity,
-                  },
-                ]}
-              />
-            )}
-
-            {/* Zoom indicator */}
-            {zoom > 0.05 && (
-              <View style={styles.zoomIndicator}>
-                <Text style={styles.zoomText}>
-                  {(1 + zoom * 2).toFixed(1)}x
-                </Text>
-              </View>
-            )}
-
-            {/* Bottom controls */}
-            <View style={styles.bottomControls}>
-              {/* Left side controls */}
-              <View style={styles.leftControls}>
-                <TouchableOpacity 
-                  style={styles.controlButton}
-                  onPress={toggleFlash}
-                >
-                  <Ionicons 
-                    name={flashMode === FlashMode.on ? "flash" : "flash-off"} 
-                    size={24} 
-                    color="#fff" 
+                {/* Focus ring */}
+                {focusPoint && (
+                  <Animated.View
+                    style={[
+                      styles.focusRing,
+                      {
+                        left: focusPoint.x - 40,
+                        top: focusPoint.y - 40,
+                        opacity: focusRingOpacity,
+                      },
+                    ]}
                   />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[styles.controlButton, zoom <= 0.01 && styles.controlButtonDisabled]}
-                  onPress={zoomOut}
-                  disabled={zoom <= 0.01}
-                >
-                  <Ionicons 
-                    name="remove" 
-                    size={24} 
-                    color={zoom <= 0.01 ? "#666" : "#fff"} 
-                  />
-                </TouchableOpacity>
-              </View>
+                )}
 
-              {/* Center capture button */}
-              <TouchableOpacity
-                style={[styles.captureButton, isCapturing && styles.captureButtonDisabled]}
-                onPress={takePicture}
-                disabled={isCapturing}
-              >
-                {isCapturing ? (
-                  <ActivityIndicator size="large" color="#fff" />
-                ) : (
-                  <View style={styles.captureInner}>
-                    <Ionicons name="camera" size={32} color="#059669" />
+                {/* Zoom indicator */}
+                {zoom > 0.02 && (
+                  <View style={styles.zoomIndicator}>
+                    <Text style={styles.zoomText}>
+                      {(1 + zoom * 2).toFixed(1)}x
+                    </Text>
                   </View>
                 )}
-              </TouchableOpacity>
 
-              {/* Right side controls */}
-              <View style={styles.rightControls}>
-                <TouchableOpacity 
-                  style={[styles.controlButton, zoom >= 0.98 && styles.controlButtonDisabled]}
-                  onPress={zoomIn}
-                  disabled={zoom >= 0.98}
-                >
-                  <Ionicons 
-                    name="add" 
-                    size={24} 
-                    color={zoom >= 0.98 ? "#666" : "#fff"} 
-                  />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.controlButton}
-                  onPress={toggleCameraType}
-                >
-                  <Ionicons name="camera-reverse" size={24} color="#fff" />
-                </TouchableOpacity>
+                {/* Bottom controls */}
+                <View style={styles.bottomControls}>
+                  {/* Left side controls */}
+                  <View style={styles.leftControls}>
+                    <TouchableOpacity 
+                      style={styles.controlButton}
+                      onPress={toggleFlash}
+                    >
+                      <Ionicons 
+                        name={flashMode === FlashMode.on ? "flash" : "flash-off"} 
+                        size={24} 
+                        color="#fff" 
+                      />
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={[styles.controlButton, zoom <= 0.02 && styles.controlButtonDisabled]}
+                      onPress={zoomOut}
+                      disabled={zoom <= 0.02}
+                    >
+                      <Ionicons 
+                        name="remove" 
+                        size={24} 
+                        color={zoom <= 0.02 ? "#666" : "#fff"} 
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Center capture button */}
+                  <TouchableOpacity
+                    style={[styles.captureButton, isCapturing && styles.captureButtonDisabled]}
+                    onPress={takePicture}
+                    disabled={isCapturing}
+                  >
+                    {isCapturing ? (
+                      <ActivityIndicator size="large" color="#fff" />
+                    ) : (
+                      <View style={styles.captureInner}>
+                        <Ionicons name="camera" size={32} color="#059669" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Right side controls */}
+                  <View style={styles.rightControls}>
+                    <TouchableOpacity 
+                      style={[styles.controlButton, zoom >= 0.95 && styles.controlButtonDisabled]}
+                      onPress={zoomIn}
+                      disabled={zoom >= 0.95}
+                    >
+                      <Ionicons 
+                        name="add" 
+                        size={24} 
+                        color={zoom >= 0.95 ? "#666" : "#fff"} 
+                      />
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.controlButton}
+                      onPress={toggleCameraType}
+                    >
+                      <Ionicons name="camera-reverse" size={24} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Camera>
+            </TouchableOpacity>
+          </Camera>
+        </View>
+      </PinchGestureHandler>
 
       {/* Quick reset zoom button */}
-      {zoom > 0.05 && (
+      {zoom > 0.1 && (
         <TouchableOpacity style={styles.resetZoomButton} onPress={resetZoom}>
           <Ionicons name="refresh" size={20} color="#fff" />
           <Text style={styles.resetZoomText}>Reset Zoom</Text>
@@ -408,11 +429,11 @@ const CameraScreen: React.FC = () => {
               </View>
               
               <View style={styles.helpTipItem}>
-                <Ionicons name="add-circle" size={20} color="#059669" />
+                <Ionicons name="resize" size={20} color="#059669" />
                 <View style={styles.helpTipText}>
-                  <Text style={styles.helpTipTitle}>Use Zoom Controls</Text>
+                  <Text style={styles.helpTipTitle}>Pinch to Zoom</Text>
                   <Text style={styles.helpTipDescription}>
-                    Tap + or - buttons to zoom in on small text gradually
+                    Pinch with two fingers to zoom in/out smoothly, or use + / - buttons
                   </Text>
                 </View>
               </View>
@@ -465,6 +486,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  cameraWrapper: {
+    flex: 1,
   },
   camera: {
     flex: 1,
