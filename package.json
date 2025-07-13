@@ -9,7 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@expo/vector-icons": "^13.0.0",
+    "@expo/vector-icons": "^14.0.0",
     "@react-native-async-storage/async-storage": "1.21.0",
     "@react-native-ml-kit/text-recognition": "^1.5.2",
     "@react-native-picker/picker": "2.6.1",
@@ -36,9 +36,17 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@expo/config-plugins": "^7.9.2",
     "@types/react": "~18.2.45",
-    "@types/react-native": "^0.73.0",
     "typescript": "^5.1.3"
+  },
+  "overrides": {
+    "@react-native-voice/voice": {
+      "@expo/config-plugins": "^7.9.2"
+    }
+  },
+  "resolutions": {
+    "@react-native-voice/voice/@expo/config-plugins": "^7.9.2"
   },
   "private": true,
   "description": "SpellMaster PRO - AI-powered spelling practice app with OCR text recognition",
